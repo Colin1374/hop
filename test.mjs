@@ -162,5 +162,18 @@ const it18 = { kind: "tweet", label: "x", dest: "https://nitter.click/jack/statu
 sandbox.openDest(it18);
 eq(sandbox.location.href, "https://nitter.click/jack/status/1", "popup blocked → navigates in same tab");
 
+// 19. share-sheet prefill via ?u= param
+sandbox.URLSearchParams = URLSearchParams;
+sandbox.location = { href: "", search: "?u=" + encodeURIComponent("https://x.com/jack/status/20"), hash: "" };
+elements.in.value = "";
+sandbox.loadFromQuery();
+eq(elements.in.value, "https://x.com/jack/status/20", "?u= prefill fills input");
+eq(elements.openAll.disabled, false, "prefill triggers parse → Open all enabled");
+// 20. prefill via # raw url
+sandbox.location = { href: "", search: "", hash: "#https://t.co/abc123" };
+elements.in.value = "";
+sandbox.loadFromQuery();
+eq(elements.in.value, "https://t.co/abc123", "# raw-url prefill fills input");
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

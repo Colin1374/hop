@@ -409,6 +409,25 @@ function renderHist() {
 
 render();
 renderHist();
+
+/* ---------- share-sheet prefill (?u=<encoded url> or #<raw url>) ---------- */
+function loadFromQuery() {
+  try {
+    var u = "";
+    if (location.search && location.search.length > 1) {
+      u = new URLSearchParams(location.search).get("u") ||
+          new URLSearchParams(location.search).get("url") || "";
+    }
+    if (!u && location.hash && location.hash.length > 1) {
+      u = decodeURIComponent(location.hash.slice(1));
+    }
+    if (u) {
+      $in.value = u;
+      refresh();
+    }
+  } catch (e) {}
+}
+loadFromQuery();
 </script>
 </body>
 </html>
