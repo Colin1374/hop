@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>hop — X → nitter</title>
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="hop">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAADNElEQVR42u3du7EbMQADQDZwgSMX4F5drKtwA04cSAeAO4P8DcGdJ+mOn/P8+CnyzxwVCBwCh8AhcAgcAofAIXAIHAKHCBwCh8AhcAgcAofAIXAIHAKHCBwCh8AhcAgcAofAIXAIHAKHCBwCh8Ti+PX7z3/ltmnI7CcUx1U+YsvJxXGJj+RmonHM+wivJR3HsI/8TgpwTPqoKKQDx5iPljZqcMz4KKqiCceAj64eynBU+6groQ9HqY/GBipx1PkoHX4rjiIfvWMvxlHho3rg3TjCfbSPuh5HrI+BIR9lGWzESrBLfMwM8yjOAIPWkA77GBvaUaJBxa0+H6tykvvxT9hAQvetDNQ6/BXq+HpPRvSOt9KK53+Wp2yHrCv6hgd6QXtli+q+5FFv1kbqitLveUkUt8s+vPqrXh8mHsEQOwG3LTwIPZ8jcBouXJKSe3hL1GRcKOMJP9knZErulPHkH/v0+sRcK+OpOBPsxem5WcbTcmDcK5N0uYyn6DTBL08VGU/XUZNfmzAy+nB8Z9rIaMXx6ckjoxtHqY/GnluPtyYDjgUfvQ13H4xPBhytPtq7XbhSgww4mnxstLpzGQ8ZcKT7WOpz7RovMuBI9LHX5OYFgGTAkeJjtcPlq0PJgONNH9vtwQGHjxU+4PCFFA4/ZeHwEAwOj8/h8OINDq/s4SDDYh8yLBMkgw9bE/iwqYkP2yH5gMNGajgcwQBHqoyv/Qk4KmXwUYnDgXFwRMjgowaHQ2rhCJ0ex1uTwUcVDldqwFEzGS7jIYOPYBwuAISjuHpXh5LBh+vK+QjHUVr0vI9DBh+hOAbKHfZxyDCQOBxjhU76OGQYVBCO4Q/psaEd9RlgBI5LHizODPOozGBfxnHhYoiBIdfjuHOZIxwLC7jheKejm7djwbGz6RSO77Xj2Ag41g7KgeOzvfTKaOyhCUe7jLoqanBsyOhqowPHkoyiQgpw7Mlo6SQdx6qMilqicWzLyG8mF8cNMsLLCcVxj4zkfs5t0yBwCBwCh8AhcAgcAofAIXCIwCFwCBwCh8AhcAgcAofAIXCIwCFwCBwCh8AhcAgcAofAIXAIHCJwCBwCh3w0fwF6Syx3MvKlSQAAAABJRU5ErkJggg==">
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --line: #21262d; --txt: #e6edf3;
+    --dim: #8b949e; --blue: #2386ea; --blue2: #1f6feb; --green: #238636;
+    --radius: 12px; color-scheme: dark;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--txt); min-height: 100dvh;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    display: flex; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 14px; }
+  header { display: flex; align-items: center; gap: 10px; padding-top: 6px; }
+  header svg { flex: none; }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  header .sub { color: var(--dim); font-size: 12.5px; margin-top: 1px; }
+  textarea {
+    width: 100%; min-height: 110px; resize: vertical; padding: 12px 14px;
+    background: var(--panel); color: var(--txt); border: 1px solid var(--line);
+    border-radius: var(--radius); font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    outline: none; -webkit-appearance: none;
+  }
+  textarea:focus { border-color: var(--blue); }
+  textarea::placeholder { color: #6e7681; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  button {
+    background: var(--blue2); color: #fff; border: 0; border-radius: 8px;
+    padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:active { transform: scale(0.97); }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--txt); font-weight: 500; }
+  button:disabled { opacity: 0.45; cursor: default; }
+  label.tog { display: flex; gap: 7px; align-items: center; color: var(--dim); font-size: 13px; cursor: pointer; user-select: none; }
+  label.tog input { accent-color: var(--blue); width: 16px; height: 16px; }
+  .results { display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .card .top { display: flex; gap: 8px; align-items: center; }
+  .badge {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 8px;
+    border-radius: 999px; text-transform: uppercase;
+  }
+  .badge.tweet { background: #1f3a5f; color: #79c0ff; }
+  .badge.profile { background: #1f4a2a; color: #7ee787; }
+  .badge.pending { background: #4a3800; color: #e3b341; }
+  .badge.fail { background: #4a1f1f; color: #ffa198; }
+  .card .url {
+    font: 12.5px/1.45 ui-monospace, Menlo, monospace; color: var(--dim);
+    word-break: break-all;
+  }
+  .card .dest { color: #79c0ff; }
+  .card .btns { display: flex; gap: 8px; }
+  .card .btns button { padding: 6px 14px; font-size: 13px; }
+  .hint { color: var(--dim); font-size: 13px; padding: 2px 4px; }
+  details { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  details summary {
+    padding: 10px 14px; cursor: pointer; color: var(--dim); font-size: 13px; user-select: none;
+    list-style: none; display: flex; justify-content: space-between; align-items: center;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: "▸"; transition: transform .15s; }
+  details[open] summary::after { transform: rotate(90deg); }
+  details .inner { padding: 0 14px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .hist {
+    display: flex; gap: 8px; align-items: center; justify-content: space-between;
+    font: 12.5px ui-monospace, Menlo, monospace; color: var(--txt);
+    padding: 6px 8px; border-radius: 8px; text-decoration: none;
+  }
+  .hist:hover { background: #1c2129; }
+  .hist .u { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #79c0ff; }
+  .hist .when { color: #6e7681; font-size: 11px; flex: none; }
+  footer { color: #6e7681; font-size: 11.5px; text-align: center; padding: 8px 0 4px; }
+  .empty { text-align: center; color: #6e7681; font-size: 13px; padding: 18px 0 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg width="34" height="34" viewBox="0 0 180 180" aria-hidden="true">
+      <rect width="180" height="180" rx="38" fill="#0d1117"/>
+      <path d="M56 56 L124 124 M124 56 L56 124" stroke="#2386ea" stroke-width="21" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>hop</h1>
+      <div class="sub">x.com / twitter.com / t.co → nitter.click</div>
+    </div>
+  </header>
+
+  <textarea id="in" placeholder="Paste a message, a link, or @handle…&#10;&#10;e.g. https://x.com/elonmusk/status/123… or “check this https://t.co/abc123 from @jack”" spellcheck="false"></textarea>
+
+  <div class="row">
+    <button id="openAll" disabled>Open all</button>
+    <button class="ghost" id="clear">Clear</button>
+    <label class="tog"><input type="checkbox" id="auto"> auto-open on paste</label>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <details>
+    <summary><span>History</span></summary>
+    <div class="inner" id="hist"></div>
+  </details>
+
+  <footer>t.co links resolve via X's public oembed API. Everything runs locally in your browser. Add to Home Screen for app-like use.</footer>
+</div>
+
+<script>
+"use strict";
+
+var DEST = "nitter.click";
+var TRACKING = ["s", "t", "ref_src", "ref_url", "fbclid", "xtor", "cn"];
+var RESERVED = {
+  home:1, explore:1, notifications:1, messages:1, search:1, settings:1,
+  i:1, intent:1, hashtag:1, compose:1, share:1, analytics:1, login:1,
+  signup:1, account:1, personalization:1, download:1, tos:1, privacy:1,
+  connected:1, connect:1, has:1, walp:1, kathy:1
+};
+var MAX_OPEN = 3;
+var TAILJUNK = /[.,;:!?)\]]+$/;
+
+var $in = document.getElementById("in");
+var $res = document.getElementById("results");
+var $openAll = document.getElementById("openAll");
+var $auto = document.getElementById("auto");
+var $hist = document.getElementById("hist");
+
+var items = [];   // {kind, label, dest, original, done}
+var pending = 0;  // unresolved t.co count
+
+/* ---------- prefs ---------- */
+try {
+  $auto.checked = localStorage.getItem("hop.auto") === "1";
+  var saved = JSON.parse(localStorage.getItem("hop.hist") || "[]");
+} catch (e) { saved = []; }
+
+$auto.addEventListener("change", function () {
+  try { localStorage.setItem("hop.auto", $auto.checked ? "1" : "0"); } catch (e) {}
+});
+
+/* ---------- parsing ---------- */
+
+function cleanPath(p) {
+  p = p.replace(/^\/statuses\//, "/status/");
+  var qi = p.indexOf("?");
+  if (qi === -1) return p;
+  var path = p.slice(0, qi), qs = p.slice(qi + 1).split("&").filter(function (kv) {
+    var k = kv.split("=")[0].toLowerCase();
+    return TRACKING.indexOf(k) === -1;
+  });
+  return qs.length ? path + "?" + qs.join("&") : path;
+}
+
+function toDest(path) {
+  return "https://" + DEST + cleanPath(path);
+}
+
+function parse(text) {
+  var found = [], seen = {}, m;
+  function add(kind, label, dest, original) {
+    if (seen[dest]) return;
+    seen[dest] = 1;
+    found.push({ kind: kind, label: label, dest: dest, original: original, done: true });
+  }
+
+  var HOST = "(?:[a-z0-9-]+\\.)*(?:twitter\\.com|x\\.com|xcancel\\.com|nitter\\.click)";
+
+  // /i/web/status/ID links (share-via-message form, no handle in URL)
+  var reIWeb = new RegExp("https?://" + HOST + "/i/web/(?:statuses|status)/(\\d+)", "gi");
+  while ((m = reIWeb.exec(text)) !== null) {
+    add("tweet", "status " + m[1], toDest("/i/web/status/" + m[1]), m[0]);
+  }
+
+  // full tweet URLs (handle + status id), incl. /photo/1 etc suffixes
+  var reTweet = new RegExp("https?://" + HOST + "/([A-Za-z0-9_]{1,15})/(?:statuses|status)/(\\d+)(/[^\\s\"'<>]*)?", "gi");
+  while ((m = reTweet.exec(text)) !== null) {
+    var rest = (m[3] || "").split(/[?#]/)[0].replace(TAILJUNK, "");
+    add("tweet", "@" + m[1] + " / status " + m[2],
+        toDest("/" + m[1] + "/status/" + m[2] + rest), m[0]);
+  }
+
+  // profile / other paths on those domains
+  var reUrl = new RegExp("https?://" + HOST + "(/[^\\s\"'<>]*)?", "gi");
+  while ((m = reUrl.exec(text)) !== null) {
+    var path = (m[1] || "/").replace(TAILJUNK, "");
+    if (/^\/[A-Za-z0-9_]{1,15}\/(?:statuses|status)\//.test(path)) continue; // tweet pass handled it
+    var seg = (path.split(/[/?#]/)[1] || "").replace(/^@/, "");
+    if (!/^[A-Za-z0-9_]{1,15}$/.test(seg) || RESERVED[seg.toLowerCase()]) continue;
+    add("profile", "@" + seg, toDest(path), m[0]);
+  }
+
+  // t.co shortlinks → resolve async via oembed
+  var reTco = /https?:\/\/t\.co\/([A-Za-z0-9]+)/g;
+  var tcos = [];
+  while ((m = reTco.exec(text)) !== null) tcos.push(m[0]);
+  for (var i = 0; i < tcos.length; i++) {
+    if (seen["tco:" + tcos[i]]) continue;
+    seen["tco:" + tcos[i]] = 1;
+    var it = { kind: "pending", label: "resolving t.co…", dest: null, original: tcos[i], done: false };
+    found.push(it);
+    resolveTco(tcos[i], it);
+  }
+
+  // bare @handles — skip ones glued into emails/urls, keep parenthesized "(@jack)"
+  var reAt = /@([A-Za-z0-9_]{1,15})\b/g;
+  while ((m = reAt.exec(text)) !== null) {
+    var before = text.slice(Math.max(0, m.index - 1), m.index);
+    if (/[A-Za-z0-9_@.\/]/.test(before)) continue;
+    add("profile", "@" + m[1], "https://" + DEST + "/" + m[1], m[0]);
+  }
+  return found;
+}
+
+function resolveTco(url, item) {
+  pending++;
+  render();
+  fetch("https://publish.x.com/oembed?url=" + encodeURIComponent(url))
+    .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then(function (j) {
+      var mm = (j.url || "").match(/([A-Za-z0-9_]{1,15})\/(?:statuses|status)\/(\d+)/);
+      if (mm) {
+        item.kind = "tweet"; item.label = "@" + mm[1] + " / status " + mm[2];
+        item.dest = toDest("/" + mm[1] + "/status/" + mm[2]);
+        item.done = true;
+      } else {
+        item.kind = "fail"; item.label = "not a post: t.co points elsewhere";
+        item.done = false;
+      }
+    })
+    .catch(function () {
+      item.kind = "fail"; item.label = "couldn't resolve (network or not a post)";
+      item.done = false;
+    })
+    .then(function () { pending--; render(); });
+}
+
+/* ---------- rendering ---------- */
+
+// SECURITY NOTE: every innerHTML assignment below interpolates ONLY values that
+// passed through esc() (escapes & < > "), or static literals — never raw user
+// input. Plain text fields use textContent. No sanitizer needed.
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// Clipboard with fallback for file:// — clipboard API requires a secure
+// context; file:// qualifies in some browsers, not all. textarea trick covers rest.
+function copyText(s) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(s).then(function () { return true; },
+                                              function () { return legacyCopy(s); });
+  }
+  return Promise.resolve(legacyCopy(s));
+}
+function legacyCopy(s) {
+  var ta = document.createElement("textarea");
+  ta.value = s;
+  ta.style.position = "fixed"; ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  var ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) {}
+  document.body.removeChild(ta);
+  return ok;
+}
+
+function render() {
+  $res.textContent = "";
+  items.forEach(function (it) {
+    var c = document.createElement("div");
+    c.className = "card";
+    var b = document.createElement("div"); b.className = "top";
+    b.innerHTML = '<span class="badge ' + it.kind + '">' + esc(it.kind) + "</span>" +
+                  '<span style="font-size:13px">' + esc(it.label) + "</span>";
+    c.appendChild(b);
+    var u = document.createElement("div"); u.className = "url";
+    u.innerHTML = esc(it.original) + (it.dest ? ' → <a class="dest" href="' + esc(it.dest) + '">' + esc(it.dest) + "</a>" : "");
+    c.appendChild(u);
+    if (it.dest) {
+      var btns = document.createElement("div"); btns.className = "btns";
+      var open = document.createElement("button"); open.textContent = "Open";
+      open.addEventListener("click", function () { openDest(it); });
+      var copy = document.createElement("button"); copy.className = "ghost"; copy.textContent = "Copy";
+      copy.addEventListener("click", function () {
+        copyText(it.dest).then(function (ok) {
+          copy.textContent = ok ? "Copied" : "select + copy";
+          setTimeout(function () { copy.textContent = "Copy"; }, 1200);
+        });
+      });
+      btns.appendChild(open); btns.appendChild(copy);
+      c.appendChild(btns);
+    }
+    $res.appendChild(c);
+  });
+  if (!items.length) {
+    var e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "nothing detected yet";
+    $res.appendChild(e);
+  }
+  var openable = items.filter(function (i) { return i.dest; }).length;
+  $openAll.disabled = openable === 0;
+  $openAll.textContent = pending ? "resolving…" : "Open all" + (openable > 1 ? " (" + Math.min(openable, MAX_OPEN) + ")" : "");
+}
+
+/* ---------- opening ---------- */
+
+function openDest(it) { // single tap on a card: fall back to same-tab navigation
+  pushHist(it);
+  var w = window.open(it.dest, "_blank");
+  if (!w) location.href = it.dest;
+}
+
+// Mobile browsers allow one programmatic open per tap; the rest get blocked.
+// Collect blocked ones and render plain anchors — each tap is a fresh gesture.
+function showBlocked(list) {
+  var c = document.createElement("div");
+  c.className = "card";
+  var t = document.createElement("div"); t.className = "top";
+  t.innerHTML = '<span class="badge pending">blocked</span>' +
+                '<span style="font-size:13px">' + esc("mobile blocked " + list.length + (list.length > 1 ? " popups — tap instead:" : " popup — tap instead:")) + "</span>";
+  c.appendChild(t);
+  list.forEach(function (it) {
+    var a = document.createElement("a");
+    a.className = "url"; a.href = it.dest; a.target = "_blank";
+    a.textContent = it.dest;
+    c.appendChild(a);
+  });
+  $res.appendChild(c);
+}
+
+$openAll.addEventListener("click", function () {
+  var list = items.filter(function (i) { return i.dest; }).slice(0, MAX_OPEN);
+  var blocked = [];
+  list.forEach(function (it) {
+    pushHist(it);
+    if (!window.open(it.dest, "_blank")) blocked.push(it);
+  });
+  if (blocked.length) showBlocked(blocked);
+});
+
+document.getElementById("clear").addEventListener("click", function () {
+  $in.value = ""; items = []; pending = 0; render();
+});
+
+var deb = null;
+function refresh() {
+  clearTimeout(deb);
+  deb = setTimeout(function () {
+    var text = $in.value;
+    items = text.trim() ? parse(text) : [];
+    render();
+    if ($auto.checked && !pending) {
+      items.filter(function (i) { return i.dest; }).slice(0, MAX_OPEN).forEach(openDest);
+    }
+  }, 150);
+}
+$in.addEventListener("input", refresh);
+$in.addEventListener("paste", function () { setTimeout(refresh, 30); });
+
+/* ---------- history ---------- */
+
+function pushHist(it) {
+  saved = saved.filter(function (h) { return h.u !== it.dest; });
+  saved.unshift({ u: it.dest, k: it.kind, t: Date.now() });
+  saved = saved.slice(0, 15);
+  try { localStorage.setItem("hop.hist", JSON.stringify(saved)); } catch (e) {}
+  renderHist();
+}
+
+function ago(t) {
+  var s = Math.floor((Date.now() - t) / 1000);
+  if (s < 60) return "now";
+  if (s < 3600) return Math.floor(s / 60) + "m";
+  if (s < 86400) return Math.floor(s / 3600) + "h";
+  return Math.floor(s / 86400) + "d";
+}
+
+function renderHist() {
+  $hist.textContent = "";
+  if (!saved.length) {
+    $hist.innerHTML = '<div class="hint" style="padding:2px 4px 4px">nothing yet</div>';
+    return;
+  }
+  saved.forEach(function (h) {
+    var a = document.createElement("a");
+    a.className = "hist"; a.href = h.u; a.target = "_blank";
+    a.innerHTML = '<span class="u">' + esc(h.u.replace(/^https:\/\//, "")) + '</span><span class="when">' + esc(ago(h.t)) + "</span>";
+    $hist.appendChild(a);
+  });
+}
+
+render();
+renderHist();
+</script>
+</body>
+</html>
