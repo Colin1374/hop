@@ -327,18 +327,19 @@ function openDest(it) { // single tap on a card: fall back to same-tab navigatio
   if (!w) location.href = it.dest;
 }
 
-// Mobile browsers allow one programmatic open per tap; the rest get blocked.
-// Collect blocked ones and render plain anchors — each tap is a fresh gesture.
+// Restricted webviews (embedded browser panes, mobile in-app browsers, popup
+// blockers) return null from window.open. Collect blocked ones and render
+// plain anchors in-context (no target=_blank — that dies in the same webviews).
 function showBlocked(list) {
   var c = document.createElement("div");
   c.className = "card";
   var t = document.createElement("div"); t.className = "top";
   t.innerHTML = '<span class="badge pending">blocked</span>' +
-                '<span style="font-size:13px">' + esc("mobile blocked " + list.length + (list.length > 1 ? " popups — tap instead:" : " popup — tap instead:")) + "</span>";
+                '<span style="font-size:13px">' + esc("new-tab blocked ×" + list.length + " — tap instead:") + "</span>";
   c.appendChild(t);
   list.forEach(function (it) {
     var a = document.createElement("a");
-    a.className = "url"; a.href = it.dest; a.target = "_blank";
+    a.className = "url"; a.href = it.dest;
     a.textContent = it.dest;
     c.appendChild(a);
   });
