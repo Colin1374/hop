@@ -118,13 +118,25 @@
     <div class="inner" id="hist"></div>
   </details>
 
+  <details>
+    <summary><span>Instance</span></summary>
+    <div class="inner">
+      <div class="hint">Destination mirror. Swap it if this one goes down.</div>
+      <div class="row">
+        <input id="destIn" type="text" spellcheck="false" style="flex:1;min-width:160px;padding:8px 10px;background:#0d1117;color:var(--txt);border:1px solid var(--line);border-radius:8px;font:13px ui-monospace,Menlo,monospace" />
+        <button id="destSave">Save</button>
+      </div>
+      <div class="hint" id="destMsg"></div>
+    </div>
+  </details>
+
   <footer>t.co links resolve via X's public oembed API. Everything runs locally in your browser. Add to Home Screen for app-like use.</footer>
 </div>
 
 <script>
 "use strict";
 
-var DEST = "nitter.click";
+var DEST = "nitter.app";
 var TRACKING = ["s", "t", "ref_src", "ref_url", "fbclid", "xtor", "cn"];
 var RESERVED = {
   home:1, explore:1, notifications:1, messages:1, search:1, settings:1,
@@ -154,6 +166,21 @@ $auto.addEventListener("change", function () {
   try { localStorage.setItem("hop.auto", $auto.checked ? "1" : "0"); } catch (e) {}
 });
 
+/* ---------- instance override (nitter instances drop like flies) ---------- */
+function validHost(h) {
+  return typeof h === "string" && /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(h) && h.length <= 60;
+}
+function setDest(h, persist) {
+  if (!validHost(h)) return false;
+  DEST = h.toLowerCase();
+  if (persist) { try { localStorage.setItem("hop.dest", DEST); } catch (e) {} }
+  return true;
+}
+try {
+  var savedDest = localStorage.getItem("hop.dest");
+  if (savedDest) setDest(savedDest, false);
+} catch (e) {}
+
 /* ---------- parsing ---------- */
 
 function cleanPath(p) {
@@ -179,7 +206,7 @@ function parse(text) {
     found.push({ kind: kind, label: label, dest: dest, original: original, done: true });
   }
 
-  var HOST = "(?:[a-z0-9-]+\\.)*(?:twitter\\.com|x\\.com|xcancel\\.com|nitter\\.click)";
+  var HOST = "(?:[a-z0-9-]+\\.)*(?:twitter\\.com|x\\.com|xcancel\\.com|nitter\\.[a-z]{2,6})";
 
   // /i/web/status/ID links (share-via-message form, no handle in URL)
   var reIWeb = new RegExp("https?://" + HOST + "/i/web/(?:statuses|status)/(\\d+)", "gi");
@@ -409,6 +436,26 @@ function renderHist() {
 
 render();
 renderHist();
+
+/* ---------- instance UI ---------- */
+(function () {
+  var di = document.getElementById("destIn");
+  var msg = document.getElementById("destMsg");
+  if (!di) return;
+  di.value = DEST;
+  document.getElementById("destSave").addEventListener("click", function () {
+    var v = (di.value || "").trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
+    if (setDest(v, true)) {
+      di.value = DEST;
+      msg.textContent = "saved: " + DEST;
+      var text = $in.value;
+      items = text.trim() ? parse(text) : [];
+      render();
+    } else {
+      msg.textContent = "not a valid domain (e.g. nitter.app)";
+    }
+  });
+})();
 
 /* ---------- share-sheet prefill (?u=<encoded url> or #<raw url>) ---------- */
 function loadFromQuery() {

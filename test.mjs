@@ -59,13 +59,13 @@ const P = sandbox.parse;
 // 1. plain tweet link, x.com, tracking param stripped
 let r = P("https://x.com/elonmusk/status/1234567890?s=20");
 eq(r.map((i) => [i.kind, i.dest]),
-   [["tweet", "https://nitter.click/elonmusk/status/1234567890"]],
+   [["tweet", "https://nitter.app/elonmusk/status/1234567890"]],
    "x.com tweet, tracking param stripped, no phantom profile card");
 
 // 2. twitter.com variant + /statuses/ normalized
 r = P("https://twitter.com/jack/statuses/20");
 eq(r.map((i) => [i.kind, i.dest]),
-   [["tweet", "https://nitter.click/jack/status/20"]],
+   [["tweet", "https://nitter.app/jack/status/20"]],
    "twitter.com /statuses/ normalized");
 
 // 3. messy message: profile link + bare @mention + pending t.co (order matters)
@@ -73,29 +73,29 @@ r = P("check https://t.co/AbC123 lol and https://x.com/jack and also @naval said
 eq(r.map((i) => [i.kind, i.label]),
    [["profile", "@jack"], ["pending", "resolving t.co…"], ["profile", "@naval"]],
    "message: profile url, pending t.co, bare @mention");
-eq(r[0].dest, "https://nitter.click/jack", "profile link dest");
-eq(r[2].dest, "https://nitter.click/naval", "bare mention dest");
+eq(r[0].dest, "https://nitter.app/jack", "profile link dest");
+eq(r[2].dest, "https://nitter.app/naval", "bare mention dest");
 
 // 4. email must NOT match as @handle
 r = P("mail me at bob@example.com ok");
 eq(r.length, 0, "email not treated as @handle");
 
 // 5. xcancel input → idempotent host swap
-r = P("https://nitter.click/elonmusk/status/999");
+r = P("https://nitter.app/elonmusk/status/999");
 eq(r.map((i) => [i.kind, i.dest]),
-   [["tweet", "https://nitter.click/elonmusk/status/999"]],
+   [["tweet", "https://nitter.app/elonmusk/status/999"]],
    "xcancel input stays xcancel");
 
 // 6. reserved path skipped, /i/web/status/ converted
 r = P("https://x.com/search?q=hi https://x.com/i/web/status/999");
 eq(r.map((i) => [i.kind, i.dest]),
-   [["tweet", "https://nitter.click/i/web/status/999"]],
+   [["tweet", "https://nitter.app/i/web/status/999"]],
    "search ignored, i/web link converted");
 
 // 7. tweet path suffixes preserved
 r = P("https://x.com/jack/status/20/photo/1 https://twitter.com/a/photo/1");
 eq(r.map((i) => i.dest),
-   ["https://nitter.click/jack/status/20/photo/1", "https://nitter.click/a/photo/1"],
+   ["https://nitter.app/jack/status/20/photo/1", "https://nitter.app/a/photo/1"],
    "photo suffix paths kept");
 
 // 8. exact duplicate link deduped
@@ -105,19 +105,19 @@ eq(r.length, 1, "duplicate links deduped");
 // 9. query on tweet → canonicalized away (params on tweets are tracking noise)
 r = P("https://x.com/jack/status/123?p=1");
 eq(r.map((i) => [i.kind, i.dest]),
-   [["tweet", "https://nitter.click/jack/status/123"]],
+   [["tweet", "https://nitter.app/jack/status/123"]],
    "tweet query dropped, single card");
 
 // 10. trailing punctuation glued to profile url
 r = P("see https://x.com/jack. nice");
 eq(r.map((i) => [i.kind, i.dest]),
-   [["profile", "https://nitter.click/jack"]],
+   [["profile", "https://nitter.app/jack"]],
    "trailing period stripped from profile url");
 
 // 11. parenthesized mention counts
 r = P("wow (@jack) posted");
 eq(r.map((i) => [i.kind, i.dest]),
-   [["profile", "https://nitter.click/jack"]],
+   [["profile", "https://nitter.app/jack"]],
    "(@handle) in parens detected");
 
 // 12. t.co resolution via stubbed oembed (happy path)
@@ -129,7 +129,7 @@ const item = { kind: "pending", label: "", dest: null, original: "https://t.co/x
 sandbox.resolveTco("https://t.co/xyz", item);
 await flush();
 eq([item.kind, item.dest],
-   ["tweet", "https://nitter.click/elonmusk/status/1234567890"],
+   ["tweet", "https://nitter.app/elonmusk/status/1234567890"],
    "t.co resolved via oembed to xcancel tweet");
 
 // 13. t.co pointing off-platform
@@ -158,9 +158,9 @@ eq(sandbox.esc(evil),
 // 18. popup blocked on mobile → same-tab navigation fallback
 sandbox.window.open = () => null;
 sandbox.location.href = "";
-const it18 = { kind: "tweet", label: "x", dest: "https://nitter.click/jack/status/1", original: "https://x.com/jack/status/1" };
+const it18 = { kind: "tweet", label: "x", dest: "https://nitter.app/jack/status/1", original: "https://x.com/jack/status/1" };
 sandbox.openDest(it18);
-eq(sandbox.location.href, "https://nitter.click/jack/status/1", "popup blocked → navigates in same tab");
+eq(sandbox.location.href, "https://nitter.app/jack/status/1", "popup blocked → navigates in same tab");
 
 // 19. share-sheet prefill via ?u= param
 sandbox.URLSearchParams = URLSearchParams;
@@ -174,6 +174,17 @@ sandbox.location = { href: "", search: "", hash: "#https://t.co/abc123" };
 elements.in.value = "";
 sandbox.loadFromQuery();
 eq(elements.in.value, "https://t.co/abc123", "# raw-url prefill fills input");
+
+// 21. instance override: validation + effect on parse
+eq(sandbox.setDest("evil.com/x y", true), false, "invalid domain rejected");
+eq(sandbox.setDest("https://nope", true), false, "url-ish / no-tld rejected");
+eq(sandbox.setDest("nitter.tiekoetter.com", true), true, "valid domain accepted");
+r = P("https://x.com/jack/status/20");
+eq(r[0].dest, "https://nitter.tiekoetter.com/jack/status/20", "override applied to new parses");
+eq(store["hop.dest"], "nitter.tiekoetter.com", "override persisted to localStorage");
+sandbox.setDest("nitter.app", true);
+r = P("https://x.com/jack/status/20");
+eq(r[0].dest, "https://nitter.app/jack/status/20", "switched back to nitter.app");
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
