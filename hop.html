@@ -99,7 +99,7 @@
     </svg>
     <div>
       <h1>hop</h1>
-      <div class="sub">x.com / twitter.com / t.co → nitter.click</div>
+      <div class="sub" id="sub">x.com / twitter.com / t.co → nitter.app</div>
     </div>
   </header>
 
@@ -442,11 +442,17 @@ renderHist();
   var di = document.getElementById("destIn");
   var msg = document.getElementById("destMsg");
   if (!di) return;
+  function syncSub() {
+    var s = document.getElementById("sub");
+    if (s) s.textContent = "x.com / twitter.com / t.co → " + DEST;
+  }
+  syncSub();
   di.value = DEST;
   document.getElementById("destSave").addEventListener("click", function () {
     var v = (di.value || "").trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
     if (setDest(v, true)) {
       di.value = DEST;
+      syncSub();
       msg.textContent = "saved: " + DEST;
       var text = $in.value;
       items = text.trim() ? parse(text) : [];
